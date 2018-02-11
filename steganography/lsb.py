@@ -2,9 +2,10 @@ import argparse
 import sys
 
 from PIL import Image
+import numpy as np
 
 
-def encode(cover_fn, secret_fn, output_fn):
+def encode(cover_fn, secret_fn, output_fn, num_bits):
     cover_im = Image.open(cover_fn)
     secret_im = Image.open(secret_fn)
 
@@ -17,6 +18,18 @@ def encode(cover_fn, secret_fn, output_fn):
         sys.exit(1)
 
     # do encoding here
+    cover_im_array = np.array(cover_im)
+    secret_im_array = np.array(secret_im)
+    output_im_array = np.zeros(cover_im_array.shape, dtype='uint8')
+
+    output_im_array_n_lsb_masked = cover_im_array & (256 - 2**7)
+    secret_im_array_n_msb_shifted = np.zeros(cover_im_array.shape, dtype='uint8')
+
+    # output_im_array[:,:100] = [255, 128, 0]
+    # output_im_array[:,100:] = [0, 0, 255]
+
+    output_im = Image.fromarray(output_im_array)
+    output_im.save(output_fn)
 
 
 
@@ -32,10 +45,11 @@ if __name__ == '__main__':
     secret_fn = args.secret_fn
     output_fn = args.output_fn
     num_bits = args.num_bits
+
     print('Using {} as cover image filename'.format(cover_fn))
     print('Using {} as secret image filename'.format(secret_fn))
     print('Using {} as number of least significant bits to use'.format(num_bits))
     print('Using {} as output image filename'.format(output_fn))
 
-    encode(cover_fn, secret_fn, output_fn)
+    encode(cover_fn, secret_fn, output_fn, num_bits)
 
