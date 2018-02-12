@@ -16,7 +16,7 @@ Our program will use a Python image library called Pillow to transform the cover
 
 **Algorithm**
 
-Our LSB algorithm that we implemented takes in the given images and places the pixel values of these images into arrays that we can manipulate. Then for each pixel that we are manipulating to hide the secret image we use a mask to clear out the x least significant bits of the cover image, where x is the third command line argument provided and get only the x most significant bits of the secret image. We then replace the x bits we just cleared out from the cover image with the x most significant bits from the secret image. 
+The LSB algorithm we implemented takes in the given images and places the pixel values of these images into arrays that we can manipulate. Then for each pixel that we are manipulating to hide the secret image we use a mask to clear out the x least significant bits of the cover image, where x is the third command line argument provided and get only the x most significant bits of the secret image. We then replace the x bits we just cleared out from the cover image with the x most significant bits from the secret image. 
 
 **Example** (using 5 LSBs for _demonstration_ (easy visual attack), used to create out.png in repo)
 
