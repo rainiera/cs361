@@ -3,8 +3,10 @@
 **Group Info**
 
 Team Rocket:
-Rainier Ababao
+Rainier Ababao,
 Kieran Vanderslice
+
+**Requirements** (with Python 2 and `pip`: `Pillow`, `numpy`)
 
 **Introduction/Original proposal**
 
@@ -16,8 +18,6 @@ Our program will use a Python image library called Pillow to transform the cover
 
 Our LSB algorithm that we implemented takes in the given images and places the pixel values of these images into arrays that we can manipulate. Then for each pixel that we are manipulating to hide the secret image we use a mask to clear out the x least significant bits of the cover image, where x is the third command line argument provided and get only the x most significant bits of the secret image. We then replace the x bits we just cleared out from the cover image with the x most significant bits from the secret image. 
 
-**Requirements** (with Python 2 and `pip`: `Pillow`, `numpy`)
-
 **Example** (using 5 LSBs for _demonstration_ (easy visual attack), used to create out.png in repo)
 
 ```
@@ -27,6 +27,6 @@ python lsb.py teapot.png secret.png 5 out.png
 **Major Points**
 
 - Accepts any image type that can be opened by PIL
-- Error checking to ensure cover image is larger than secret image
+- Error checking to ensure cover image and secret image are compatible
 - User can specifiy with a commnad line argument how many least significant bits they wish to use
-- USer can specify their output destination
+- User can specify their output destination
