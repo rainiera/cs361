@@ -43,11 +43,21 @@ def subBytes(state_array):
 	#print(state_array)
 	return state_array
 
+def subBytes_inv(state_array):
+	for index in range(len(state_array)):
+		state_array[index] = inverse_s_box[state_array[index]]
+	return state_array
+
 def shiftRows(state_array):
 	# MOAR SHIT
 	for index in range(4):
 		state_array[index*4 : index*4+4] = shiftBytes(state_array[index*4 : index*4+4], index)
 	#print(state_array)
+	return state_array
+
+def shiftRows_inv(state_array):
+	for index in range(4):
+		state_array[index*4 : index*4+4] = shiftBytes(state_array[index*4 : index*4+4], -index)
 	return state_array
 
 # Helper function for shiftRows main func
@@ -58,16 +68,46 @@ def mixColumns():
 	# EXTRA SHIT
 	return
 
+def mixColumns_inv():
+	return
+
 # Helper function to create the round key
-def genRoundKey(original_key, round):
-	mod = round * 16
+def genRoundKey(original_key, num_round):
+	mod = num_round * 16
 	return original_key[mod : mod+16]
 
-def addRoundKey():
+def addRoundKey(state_array, round_key):
 	# FINAL SHIT
-	return
+	for index in range (len(state_array)):
+		state_array[index] = state_array[index] ^ round_key[index]
+	return state_array
+
+def encrypt(state_array, key, num_rounds):
+	round_key = genRoundKey(key, 0)
+	state_array = addRoundKey(state_array, round_key)
+	for index in range(1, num_rounds):
+		round_key = genRoundKey(key, 0)
+		state_array = subBytes(state_array)
+		state_array = shiftRows(state_array)
+		state_array = mixColumns(state_array)
+		state_array = addRoundKey(state_array, round_key)
+	round_key = genRoundKey(key, num_rounds)
+	subBytes(state_array)
+	shiftRows(state_array)
+	addRoundKey(state_array, round_key)
+
+def decrypt_round(state_array, round_key):
+	state_array = addRoundKey(state_array, round_key)
+	state_array = mixColumns_inv()
+	state_array = shiftRows_inv(state_array)
+	state_array = subBytes_inv(state_array)
 
 if __name__ == '__main__':
 	test_array = [0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D]
+	print(test_array)
 	test_array = subBytes(test_array)
 	test_array = shiftRows(test_array)
+	print(test_array)
+	test_array = shiftRows_inv(test_array)
+	test_array = subBytes_inv(test_array)
+	print(test_array)
