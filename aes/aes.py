@@ -466,6 +466,7 @@ def process_args_and_run(args):
     num_rounds = 10 if int(args.keysize) is 128 else 14
 
     key = get_key(args.keyfile)
+
     if 'encrypt' in args.mode or 'decrypt' in args.mode:
         with open(args.outputfile, 'w') as whandle:
             for block_no, state in enumerate(blocks):
