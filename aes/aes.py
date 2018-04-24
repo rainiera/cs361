@@ -225,9 +225,9 @@ def expandKey(cipherkey):
 
 
 def genRoundKey(key, num_round):
-    return expandKey(key)
+    # return expandKey(key)
     mod = num_round * 16
-    return original_key[mod: mod + 16]
+    return key[mod: mod + 16]
 
 
 def addRoundKey(state_array, round_key):
@@ -252,6 +252,21 @@ def encrypt(state_array, key, num_rounds):
     subBytes(state_array)
     shiftRows(state_array)
     addRoundKey(state_array, round_key)
+
+def decrypt(state_array, key, num_rounds):
+    expandedKey = expandKey(key)
+    round_key = genRoundKey(expandedKey, num_rounds)
+    state_array = addRoundKey(state_array, round_key)
+    state_array = shiftRows_inv(state_array)
+    state_array = subBytes_inv(state_array)
+    for index in range(num_rounds - 1, 0, -1):
+        round_key = genRoundKey(expandedKey, index)
+        state_array = addRoundKey(state_array, round_key)
+        state_array = mixColumns_inv(state_array)
+        state_array = shiftRows_inv(state_array)
+        state_array = subBytes_inv(state_array)
+    round_key = genRoundKey(expandedKey, 0)
+    addRoundKey = (state_array, round_key)
 
 
 def convert_to_state_array(input_bytes):
@@ -313,8 +328,9 @@ if __name__ == '__main__':
                       0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
 
     print(test_cipherkey)
+    key = expandKey(test_cipherkey)
     for i in range(10):
-        print("round {}".format(i), [hex(a) for a in genRoundKey(test_cipherkey, i)])
+        print("round {}".format(i), [hex(a) for a in genRoundKey(key, i)])
 """
     # input_byte_whole = get_file_and_pad(args.inputfile, int(args.keysize))
     input_byte_whole = get_test_and_pad(test_plaintext, int(args.keysize))
