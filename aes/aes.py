@@ -314,7 +314,7 @@ if __name__ == '__main__':
 
     print(test_cipherkey)
     for i in range(10):
-        print(genRoundKey(test_cipherkey, i))
+        print("round {}".format(i), [hex(a) for a in genRoundKey(test_cipherkey, i)])
 """
     # input_byte_whole = get_file_and_pad(args.inputfile, int(args.keysize))
     input_byte_whole = get_test_and_pad(test_plaintext, int(args.keysize))
