@@ -200,7 +200,7 @@ def expandKey(cipherkey):
     rconi = 1
     expandedKeySize = 0
 
-    buffer = [0x00, 0x00, 0x00, 0x00]
+    buff = [0x00, 0x00, 0x00, 0x00]
 
     for i in range(keySize):
         expandedKey.append(cipherkey[i])
@@ -208,50 +208,69 @@ def expandKey(cipherkey):
 
     while expandedKeySize < 240:
         for i in range(4):
-            buffer[i] = expandedKey[(expandedKeySize - 4) + i]
+            buff[i] = expandedKey[(expandedKeySize - 4) + i]
         if expandedKeySize % keySize == 0:
-            buffer = generateKeySchedule(buffer, rconi)
+            buff = generateKeySchedule(buff, rconi)
             rconi += 1
         if expandedKeySize % keySize == 16:
             for i in range(4):
-                buffer[i] = s_box[buffer[i]]
+                buff[i] = s_box[buff[i]]
 
         for i in range(4):
             expandedKey.append(keyExpansionMath(
-                expandedKey, expandedKeySize, keySize, buffer, i))
+                expandedKey, expandedKeySize, keySize, buff, i))
             expandedKeySize += 1
 
     return expandedKey
 
 
 def genRoundKey(key, num_round):
-    # return expandKey(key)
     mod = num_round * 16
     return key[mod: mod + 16]
 
 
 def addRoundKey(state_array, round_key):
+    # print("round_key", round_key)
     for col in range(4):
         for row in range(4):
-            state_array[col][row] = state_array[col][row] ^ round_key[(
-                col * 4 + row) % 16]
+            # print(hex(state_array[col][row]), hex(round_key[(col * 4 + row) % 16]))
+            state_array[col][row] = state_array[col][row] ^ round_key[(col * 4 + row) % 16]
     return state_array
+
+
+def state_to_hexstring(state):
+    s = []
+    for arr in state:
+        for num in arr:
+            s.append(hex(num))
+    return ''.join([letters[2:] for letters in s])
 
 
 def encrypt(state_array, key, num_rounds):
     expandedKey = expandKey(key)
     round_key = genRoundKey(expandedKey, 0)
     state_array = addRoundKey(state_array, round_key)
+    print("addRoundKey 0", state_to_hexstring(state_array))
     for index in range(1, num_rounds):
-        round_key = genRoundKey(key, 0)
+        round_key = genRoundKey(expandedKey, index)
         state_array = subBytes(state_array)
+        print("subBytes round {}".format(index), state_to_hexstring(state_array))
         state_array = shiftRows(state_array)
+        print("shiftRows round {}".format(index), state_to_hexstring(state_array))
         state_array = mixColumns(state_array)
+        print("mixColumns round {}".format(index), state_to_hexstring(state_array))
         state_array = addRoundKey(state_array, round_key)
-    round_key = genRoundKey(key, num_rounds)
+        print("addRoundKey round {}".format(index), state_to_hexstring(state_array))
+        print('\n\n')
+    round_key = genRoundKey(expandedKey, num_rounds)
     subBytes(state_array)
+    print("subBytes round final", state_to_hexstring(state_array))
     shiftRows(state_array)
+    print("shiftRows round final", state_to_hexstring(state_array))
     addRoundKey(state_array, round_key)
+    print("addRoundKey round final", state_to_hexstring(state_array))
+    return state_array
+
 
 def decrypt(state_array, key, num_rounds):
     expandedKey = expandKey(key)
@@ -274,24 +293,21 @@ def convert_to_state_array(input_bytes):
     state = []
 
 
-def get_file_and_pad(inputfile, keysize):
-    """Opens inputfile and pads it with an amount of zero-bytes based on keysize
-    """
-    mutable_data = None
-    with open(inputfile, 'rb') as binary_file:
-        mutable_data = bytearray(binary_file.read())
-        num_bytes = len(mutable_data)
-        num_bits = num_bytes * 4
-        print('Original data length {} bytes, or {} bits'.format(num_bytes, num_bits))
+def get_file_and_pad(inputfile):
+    with open(inputfile, 'r') as fhandle:
+        ascii_chars = fhandle.read()
 
-        # Add padding to file bytearray, if needed
-        required_padding = keysize - (len(mutable_data) % keysize)
+        hex_chars = [ascii_chars[i : i + 2] for i in range(0, len(ascii_chars), 2)]
+        hex_chars.remove('\n')
+
+        hex_chars = [eval('0x{}'.format(hex_char)) for hex_char in hex_chars]
+
+        required_padding = 16 - (len(hex_chars) % 16)
         for _ in range(required_padding):
-            mutable_data.append(0)
+            hex_chars.append(0x00)
 
-        print('Input file padded with {} bytes'.format(required_padding))
-        print([byte for byte in mutable_data])
-    return mutable_data
+        print(hex_chars)
+    return hex_chars
 
 
 def get_test_and_pad(test, keysize):
@@ -302,12 +318,16 @@ def get_test_and_pad(test, keysize):
 
 
 def get_key(inputfile):
-    """Opens inputfile and pads it with an amount of zero-bytes based on keysize
-    """
-    key = None
-    with open(inputfile, 'rb') as binary_file:
-        key = bytearray(binary_file.read())
-    return key
+    with open(inputfile, 'r') as fhandle:
+        ascii_chars = fhandle.read()
+
+        hex_chars = [ascii_chars[i : i + 2] for i in range(0, len(ascii_chars), 2)]
+        hex_chars.remove('\n')
+
+        hex_chars = [eval('0x{}'.format(hex_char)) for hex_char in hex_chars]
+
+        print(hex_chars)
+    return hex_chars
 
 
 if __name__ == '__main__':
@@ -322,20 +342,18 @@ if __name__ == '__main__':
 
     blocks = []
 
-    test_plaintext = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
-                      0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]
-    test_cipherkey = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-                      0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+    # test_plaintext = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+    #                   0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]
+    # test_cipherkey = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+    #                   0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
 
-    print(test_cipherkey)
-    key = expandKey(test_cipherkey)
-    for i in range(10):
-        print("round {}".format(i), [hex(a) for a in genRoundKey(key, i)])
-"""
-    # input_byte_whole = get_file_and_pad(args.inputfile, int(args.keysize))
-    input_byte_whole = get_test_and_pad(test_plaintext, int(args.keysize))
+    # key = expandKey(test_cipherkey)
+    # for i in range(10):
+    #     print("round {}".format(i), [hex(a) for a in genRoundKey(key, i)])
+
+
+    input_byte_whole = get_file_and_pad(args.inputfile)
     # block is 128 bits, or 16 bytes => 4x4 byte array
-    # print(len(input_byte_whole))
     for n in range(int(len(input_byte_whole) / 16)):
         block = [[0x00 for _ in range(4)] for _ in range(4)]
         for i in range(16):
@@ -343,16 +361,19 @@ if __name__ == '__main__':
             row = int(i / 4)
             block[row][col] = input_byte_whole[n * 16 + i]
         blocks.append(block)
-    print("blocks", blocks)
-    print("len blocks", len(blocks))
+    # print("blocks", blocks)
+    # print("len blocks", len(blocks))
 
     num_rounds = 10 if int(args.keysize) is 128 else 14
-    # key = get_key(args.keyfile)
-    key = test_cipherkey
+
+    key = get_key(args.keyfile)
+
     for state in blocks:
-        print("state", state)
-        state = encrypt(state, test_cipherkey, num_rounds)
-        print("done", state)
+        # print("state", state)
+        state = encrypt(state, key, num_rounds)
+        # print("done", state_to_hexstring(state))
+        # print("done", [hex(s) for s in [d for d in state]])
+        # print("done", [hex(s) for s in state])
         # state = subBytes(state)
         # print("subbytes", state)
         # state = shiftRows(state)
@@ -361,8 +382,8 @@ if __name__ == '__main__':
         # print(addRoundKey(state, round_key))
         # encrypt(state, key, num_rounds)
 
-    test_array = [0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6,
-                  0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D]
+    # test_array = [0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6,
+    #               0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D]
     # print(test_array)
     # test_array = subBytes(test_array)
     # test_array = shiftRows(test_array)
@@ -379,4 +400,3 @@ if __name__ == '__main__':
     # parser.add_argument('--mode', help='Encrypt or decrypt')
     # args = parser.parse_args()
     # print([byte for byte in get_file_and_pad(args.inputfile, int(args.keysize))])
-"""
